@@ -94,7 +94,12 @@
 </div>
 
 <script>
-const PROXY_URL = 'https://api.allorigins.win/raw?url=https://docs.google.com/spreadsheets/d/e/2PACX-1vSsudFALyUEa4dSIJrURQljz3GpcaGPDiG4ZjT9cHJOBGVNU2d-Uo8cPL_A2sC9Gcpdi2h1KiU_HsF8/pub?output=csv';
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSsudFALyUEa4dSIJrURQljz3GpcaGPDiG4ZjT9cHJOBGVNU2d-Uo8cPL_A2sC9Gcpdi2h1KiU_HsF8/pub?output=csv';
+const PROXIES = [
+  'https://api.allorigins.win/raw?url=',
+  'https://corsproxy.io/?',
+  'https://api.codetabs.com/v1/proxy?quest='
+];
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function ml(s){ const[d,m,y]=s.split('/'); return MONTHS[+m-1]+"'"+y.slice(2); }
 function fmt(n){ const a=Math.abs(n); if(a>=1000000)return 'R'+(n/1000000).toFixed(2)+'M'; if(a>=1000)return 'R'+(n/1000).toFixed(0)+'K'; return 'R'+Math.round(n); }
@@ -153,21 +158,28 @@ function showError(msg){
      <button onclick="loadData()" style="margin-top:8px;padding:8px 16px;border-radius:8px;border:none;background:#007aff;color:#fff;font-size:13px;cursor:pointer">Try Again</button></div>`;
 }
 
+function tryProxy(index){
+  if(index >= PROXIES.length){
+    showError('Failed to load data after multiple attempts.<br>Make sure the Google Sheet is published to web.');
+    return;
+  }
+  const url = PROXIES[index] + encodeURIComponent(CSV_URL);
+  document.getElementById('loadmsg').textContent = 'Loading data… (attempt '+(index+1)+')';
+  fetch(url, {signal: AbortSignal.timeout(15000)})
+    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
+    .then(csv=>{
+      allRows = parseRows(csv);
+      if(!allRows.length) throw new Error('No rows parsed');
+      initDashboard();
+    })
+    .catch(()=> tryProxy(index+1));
+}
+
 function loadData(){
   document.getElementById('loadmsg').style.display='block';
   document.getElementById('loadmsg').textContent='Loading data…';
   document.getElementById('main').style.display='none';
-
-  fetch(PROXY_URL)
-    .then(r=>{ if(!r.ok) throw new Error('HTTP '+r.status); return r.text(); })
-    .then(csv=>{
-      allRows = parseRows(csv);
-      if(!allRows.length) throw new Error('No data parsed');
-      initDashboard();
-    })
-    .catch(err=>{
-      showError('Failed to load data.<br><small>'+err.message+'</small><br>Make sure the Google Sheet is published to web.');
-    });
+  tryProxy(0);
 }
 
 function updateCustomers(selectedChannel){
