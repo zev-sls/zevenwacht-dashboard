@@ -200,10 +200,13 @@ function doLogin(){
       const get = (r,k) => { const key=Object.keys(r).find(x=>x.trim()===k); return key?(r[key]||'').trim():''; };
       const match = users.find(r=> get(r,'Name').toLowerCase()===name.toLowerCase() && get(r,'PIN')===pin);
       if(!match){ err.textContent='Incorrect name or PIN. Please try again.'; return; }
+      const rawChannels = get(match,'Channel');
+      const userChannels = rawChannels ? rawChannels.split(',').map(c=>c.trim()).filter(Boolean) : [];
       currentUser = {
-        name:    get(match,'Name'),
-        role:    get(match,'Role').toLowerCase(),
-        channel: get(match,'Channel')
+        name:     get(match,'Name'),
+        role:     get(match,'Role').toLowerCase(),
+        channels: userChannels,
+        channel:  userChannels[0] || ''
       };
       err.textContent='';
       startDashboard();
@@ -227,7 +230,7 @@ function startDashboard(){
   document.getElementById('user-pill').textContent='👤 '+currentUser.name;
   const badge = document.getElementById('role-badge');
   if(currentUser.role==='rep'){
-    badge.textContent=currentUser.channel;
+    badge.textContent=currentUser.channels.join(', ');
     badge.style.display='inline-block';
   } else {
     badge.style.display='none';
@@ -257,9 +260,9 @@ function loadData(){
         return {period,channel,customer,product,qty:Math.round(qty),amount:Math.round(amount*100)/100};
       }).filter(Boolean);
 
-      // Restrict reps to their channel + customers
-      if(currentUser.role==='rep' && currentUser.channel){
-        rows = rows.filter(r=>r.channel===currentUser.channel);
+      // Restrict reps to their channels + customers
+      if(currentUser.role==='rep' && currentUser.channels.length){
+        rows = rows.filter(r=>currentUser.channels.includes(r.channel));
       }
 
       allRows = rows;
@@ -285,15 +288,20 @@ function initDashboard(){
   const cSel=document.getElementById('cf');
   cSel.innerHTML='<option value="all">All channels</option>';
   // Reps only see their own channel
-  const visibleChannels = currentUser.role==='rep' ? [currentUser.channel] : channels;
+  const visibleChannels = currentUser.role==='rep' ? currentUser.channels : channels;
   visibleChannels.forEach(c=>{ const o=document.createElement('option');o.value=c;o.textContent=c;cSel.appendChild(o); });
-  if(currentUser.role==='rep'){ cSel.value=currentUser.channel; cSel.disabled=true; }
+  // Lock channel filter only if rep has exactly one channel
+  if(currentUser.role==='rep' && currentUser.channels.length===1){
+    cSel.value=currentUser.channels[0]; cSel.disabled=true;
+  } else {
+    cSel.disabled=false;
+  }
 
   const prSel=document.getElementById('prf');
   prSel.innerHTML='<option value="all">All products</option>';
   products.forEach(p=>{ const o=document.createElement('option');o.value=p;o.textContent=p;prSel.appendChild(o); });
 
-  updateCustomers(currentUser.role==='rep'?currentUser.channel:'all');
+  updateCustomers(currentUser.role==='rep' && currentUser.channels.length===1 ? currentUser.channels[0] : 'all');
 
   document.getElementById('last-updated').textContent=
     'Updated '+new Date().toLocaleTimeString('en-ZA',{hour:'2-digit',minute:'2-digit'});
