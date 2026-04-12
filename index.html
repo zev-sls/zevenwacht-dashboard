@@ -164,6 +164,7 @@ tr.row-item.selected td{background:#eef4ff;color:#007aff;font-weight:600}
       <table>
         <thead><tr>
           <th id="c1">Channel</th>
+          <th id="th-qty" style="text-align:right;display:none">Qty</th>
           <th style="text-align:right">Revenue</th>
         </tr></thead>
         <tbody id="tb"></tbody>
@@ -314,7 +315,13 @@ function updateCustomers(ch){
 function onFYChange(){
   const fy=document.getElementById('fyf').value;
   const ps=document.getElementById('pf');
-  ps.value='all'; ps.disabled=fy!=='all'; ps.style.opacity=fy!=='all'?'0.4':'1';
+  ps.value='all';
+  ps.disabled=false;
+  ps.style.opacity='1';
+  // Repopulate period dropdown filtered to selected year
+  ps.innerHTML='<option value="all">All periods</option>';
+  const filteredPeriods=fy==='all'?periods:periods.filter(p=>p.slice(-4)===fy);
+  filteredPeriods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=ml(p);ps.appendChild(o);});
   selectedItem=null; render();
 }
 
@@ -352,18 +359,36 @@ function sw(t){
 function toggleItem(idx){
   const name=window._tableItems[idx];
   if(selectedItem===name){
+    // deselect — stay on current tab
     selectedItem=null;
     const key=activeTab==='channels'?'cf':activeTab==='customers'?'cuf':'prf';
     if(!(activeTab==='channels'&&currentUser.role==='rep'&&currentUser.channels.length===1))
       document.getElementById(key).value='all';
     if(activeTab==='channels') updateCustomers('all');
+    render();
   } else {
     selectedItem=name;
-    const key=activeTab==='channels'?'cf':activeTab==='customers'?'cuf':'prf';
-    document.getElementById(key).value=name;
-    if(activeTab==='channels') updateCustomers(name);
+    if(activeTab==='channels'){
+      // Select channel filter and jump to By Customer tab
+      document.getElementById('cf').value=name;
+      updateCustomers(name);
+      document.getElementById('cuf').value='all';
+      selectedItem=null;
+      activeTab='customers';
+      document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',i===1));
+    } else if(activeTab==='customers'){
+      // Select customer filter and jump to By Product tab
+      document.getElementById('cuf').value=name;
+      selectedItem=null;
+      activeTab='products';
+      document.querySelectorAll('.tab').forEach((el,i)=>el.classList.toggle('on',i===2));
+    } else {
+      // Products tab — just highlight
+      const key='prf';
+      document.getElementById(key).value=name;
+    }
+    render();
   }
-  render();
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────
@@ -413,14 +438,19 @@ function render(){
   const sorted=Object.entries(grp).sort((a,b)=>b[1].rev-a[1].rev).slice(0,15);
 
   document.getElementById('c1').textContent=activeTab==='channels'?'Channel':activeTab==='customers'?'Customer':'Product';
+  const showQty=activeTab==='products';
+  document.getElementById('th-qty').style.display=showQty?'':'none';
+  // adjust column widths
+  document.querySelector('th:nth-child(1)').style.width=showQty?'57%':'70%';
+  document.getElementById('th-qty').style.width='13%';
   document.getElementById('tb').innerHTML=sorted.map(([name,d],i)=>{
     const sel=selectedItem===name;
     return `<tr class="row-item${sel?' selected':''}" onclick="toggleItem(${i})">
       <td title="${name}">${name}</td>
+      ${showQty?`<td class="n">${d.qty.toLocaleString()}</td>`:''}
       <td class="n">${fmt(d.rev)}</td>
     </tr>`;
   }).join('');
-  // store sorted names for lookup by index
   window._tableItems=sorted.map(([name])=>name);
 
   updateClearBtn();
