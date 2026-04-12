@@ -276,10 +276,6 @@ function initDashboard(){
   customers=[...new Set(allRows.map(r=>r.customer))].sort();
   products =[...new Set(allRows.map(r=>r.product))].sort();
 
-  const pSel=document.getElementById('pf');
-  pSel.innerHTML='<option value="all">All periods</option>';
-  periods.forEach(p=>{const o=document.createElement('option');o.value=p;o.textContent=ml(p);pSel.appendChild(o);});
-
   const cSel=document.getElementById('cf');
   cSel.innerHTML='<option value="all">All channels</option>';
   const visCh=currentUser.role==='rep'?currentUser.channels:channels;
