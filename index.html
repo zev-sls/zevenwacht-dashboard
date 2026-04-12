@@ -191,7 +191,7 @@ let currentUser=null;
 
 // ── UTILS ─────────────────────────────────────────────────────────────
 function ml(s){ const[d,m,y]=s.split('/'); return MONTHS[+m-1]+"'"+y.slice(2); }
-function fmt(n){ const a=Math.abs(n); if(a>=1e6)return 'R'+(n/1e6).toFixed(2)+'M'; if(a>=1e3)return 'R'+(n/1e3).toFixed(0)+'K'; return 'R'+Math.round(n); }
+function fmt(n){ const a=Math.abs(n); if(a>=1e6)return 'R'+(n/1e6).toFixed(2)+'M'; if(a>=10000)return 'R'+(n/1000).toFixed(1)+'K'; return 'R'+Math.round(n).toLocaleString(); }
 function sortP(a,b){ const[,ma,ya]=a.split('/');const[,mb,yb]=b.split('/');return(ya-yb)||ma-mb; }
 function get(r,k){ const key=Object.keys(r).find(x=>x.trim()===k); return key?(r[key]||'').trim():''; }
 
