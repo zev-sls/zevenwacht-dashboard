@@ -429,8 +429,15 @@ function render(){
     <div class="mc"><div class="lbl">Bottles</div><div class="val">${qty.toLocaleString()}</div><div class="sub">${nProducts} products · ${nCustomers} customers</div></div>
     <div class="mc"><div class="lbl">Revenue</div><div class="val">${fmt(rev)}</div><div class="sub">${tabCount}</div></div>`;
 
+  // Chart always shows all periods (ignores selectedPeriod so bars don't disappear)
   const byM={};
-  rows.forEach(r=>{byM[r.period]=(byM[r.period]||0)+r.amount;});
+  allRows.filter(r=>{
+    if(selectedYear!=='all'&&r.period.slice(-4)!==selectedYear) return false;
+    if(channel!=='all' &&r.channel !==channel)  return false;
+    if(customer!=='all'&&r.customer!==customer) return false;
+    if(product!=='all' &&r.product !==product)  return false;
+    return true;
+  }).forEach(r=>{byM[r.period]=(byM[r.period]||0)+r.amount;});
   const sp=Object.keys(byM).sort(sortP);
   if(chart)chart.destroy();
   const barColors=sp.map(p=>selectedPeriod?selectedPeriod===p?'#ff9500':'#d1d1d6':'#007aff');
