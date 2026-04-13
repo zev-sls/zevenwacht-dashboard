@@ -421,15 +421,19 @@ function render(){
 
   const rev=rows.reduce((s,r)=>s+r.amount,0);
   const qty=rows.reduce((s,r)=>s+r.qty,0);
+  const nChannels=new Set(rows.map(r=>r.channel)).size;
+  const nCustomers=new Set(rows.map(r=>r.customer)).size;
+  const nProducts=new Set(rows.map(r=>r.product)).size;
+  const tabCount=activeTab==='channels'?nChannels+' channel'+(nChannels!==1?'s':''):activeTab==='customers'?nCustomers+' customer'+(nCustomers!==1?'s':''):nProducts+' product'+(nProducts!==1?'s':'');
   document.getElementById('metrics').innerHTML=`
-    <div class="mc"><div class="lbl">Bottles</div><div class="val">${qty.toLocaleString()}</div><div class="sub">${new Set(rows.map(r=>r.product)).size} products · ${new Set(rows.map(r=>r.customer)).size} customers</div></div>
-    <div class="mc"><div class="lbl">Revenue</div><div class="val">${fmt(rev)}</div><div class="sub">${rows.length.toLocaleString()} transactions</div></div>`;
+    <div class="mc"><div class="lbl">Bottles</div><div class="val">${qty.toLocaleString()}</div><div class="sub">${nProducts} products · ${nCustomers} customers</div></div>
+    <div class="mc"><div class="lbl">Revenue</div><div class="val">${fmt(rev)}</div><div class="sub">${tabCount}</div></div>`;
 
   const byM={};
   rows.forEach(r=>{byM[r.period]=(byM[r.period]||0)+r.amount;});
   const sp=Object.keys(byM).sort(sortP);
   if(chart)chart.destroy();
-  const barColors=sp.map(p=>selectedPeriod===p?'#ff9500':'#007aff');
+  const barColors=sp.map(p=>selectedPeriod?selectedPeriod===p?'#ff9500':'#d1d1d6':'#007aff');
   chart=new Chart(document.getElementById('tc'),{
     type:'bar',
     data:{labels:sp.map(ml),datasets:[{label:'Revenue',data:sp.map(p=>Math.round(byM[p])),backgroundColor:barColors,borderRadius:4,borderSkipped:false}]},
@@ -452,7 +456,7 @@ function render(){
   const key=activeTab==='channels'?'channel':activeTab==='customers'?'customer':'product';
   const grp={};
   rows.forEach(r=>{const k=r[key];if(!grp[k])grp[k]={rev:0,qty:0};grp[k].rev+=r.amount;grp[k].qty+=r.qty;});
-  const sorted=Object.entries(grp).sort((a,b)=>b[1].rev-a[1].rev).slice(0,15);
+  const sorted=Object.entries(grp).sort((a,b)=>b[1].rev-a[1].rev);
 
   document.getElementById('c1').textContent=activeTab==='channels'?'Channel':activeTab==='customers'?'Customer':'Product';
   const showQty=activeTab==='products';
