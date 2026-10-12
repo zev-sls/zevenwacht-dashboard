@@ -1,5 +1,6 @@
 {
   "scripts": {
+    "update-sales": "node scripts/update-sales.js",
     "encrypt": "node scripts/encrypt-data.js",
     "hash-pin": "node scripts/hash-pin.js",
     "import-sales-excel": "node scripts/import-sales-excel.js",
