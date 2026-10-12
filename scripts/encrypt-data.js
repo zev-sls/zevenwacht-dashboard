@@ -7,9 +7,12 @@ if (!process.env.DATA_ENCRYPTION_KEY) {
   const localEnv = path.join(root, '.env.local');
   if (fs.existsSync(localEnv)) process.loadEnvFile(localEnv);
 }
-const target = process.argv[2] || 'all';
-if (!['all', 'sales', 'users'].includes(target)) {
-  throw new Error('Usage: node scripts/encrypt-data.js [sales|users]');
+const args = process.argv.slice(2);
+const rotate = args.includes('--rotate');
+const targets = args.filter(arg => arg !== '--rotate');
+const target = targets[0] || 'all';
+if (targets.length > 1 || !['all', 'sales', 'users'].includes(target)) {
+  throw new Error('Usage: node scripts/encrypt-data.js [all|sales|users] [--rotate]');
 }
 const keyRaw = process.env.DATA_ENCRYPTION_KEY;
 if(!keyRaw) throw new Error('Set DATA_ENCRYPTION_KEY before running this script');
@@ -19,7 +22,7 @@ if(key.length !== 32) throw new Error('DATA_ENCRYPTION_KEY must decode to 32 byt
 function encryptFile(source, dest){
   const value = JSON.parse(fs.readFileSync(source, 'utf8'));
   const plaintext = JSON.stringify(value);
-  if (fs.existsSync(dest)) {
+  if (!rotate && fs.existsSync(dest)) {
     const existing = JSON.parse(fs.readFileSync(dest, 'utf8'));
     if (existing.alg !== 'AES-256-GCM') throw new Error(`Unsupported encryption in ${dest}`);
     const decipher = crypto.createDecipheriv('aes-256-gcm', key, Buffer.from(existing.iv, 'base64'));

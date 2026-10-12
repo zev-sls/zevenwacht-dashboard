@@ -45,6 +45,8 @@ npm.cmd run encrypt -- users
 
 `npm.cmd run encrypt` without an argument checks both private files and rewrites only files whose plaintext has changed.
 
+To rotate the encryption key, first set a new `DATA_ENCRYPTION_KEY` in the ignored `.env.local`, then run `npm.cmd run encrypt -- --rotate` to re-encrypt both files. Update both `DATA_ENCRYPTION_KEY` and `SESSION_SECRET` in Netlify before deploying the rotated artifacts. Existing sessions will need to sign in again after the deployment.
+
 ## Local testing
 
 ```powershell
